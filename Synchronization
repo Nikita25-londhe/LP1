@@ -1,0 +1,108 @@
+package demo;
+import java.util.*;
+class Container
+{
+    int capacity=2;
+    LinkedList<Integer>lst=new LinkedList<>();
+    synchronized public void produce(int v)
+    {
+        try
+        {
+             while(lst.size()==capacity)
+            {
+                wait();
+            } 
+             lst.add(v);
+            System.out.println(Thread.currentThread().getName()+" produces value "+v);
+            notify();
+            Thread.sleep(1000);
+        }
+        catch(Exception e)
+        {
+            System.out.println(e);
+        }
+    }
+    synchronized public void consume()
+    {
+        try
+        {
+            while(lst.size()==0)
+            {
+                wait();
+            }
+            System.out.println(Thread.currentThread().getName()+" consumes "+lst.removeFirst());
+            notify();
+            Thread.sleep(1000);
+        }
+        catch(Exception e)
+        {
+            System.out.println(e);
+        }
+    }
+}
+class Producer extends Thread
+{
+    Thread t;
+    Container ref;
+    Producer(Container temp)
+    {
+        ref=temp;
+        t=new Thread(this,"producer");
+        startThread();
+    }
+    public void run()
+    {
+        int value=0;
+        while(true)
+        {
+            ref.produce(value);
+            value++;
+        }
+    }
+    public void startThread()
+    {
+        t.start();
+    }
+   
+}
+class Consumer extends Thread
+{
+    Thread t;
+    Container ref;
+    Consumer(Container temp)
+    {
+        ref=temp;
+        t=new Thread(this,"consumer");
+        startThread();
+    }
+    public void run()
+    {
+        while(true)
+        {
+            ref.consume();
+        }
+    }
+     public void startThread()
+    {
+        t.start();
+    }
+}
+public class Myclass
+{
+    public static void main(String[] args) 
+    {
+       Container ct=new Container();
+       Producer p=new Producer(ct);
+       Consumer c=new Consumer(ct);
+       try
+       {
+             Thread.sleep(30000)   ;
+       }
+       catch(Exception e)
+       {
+           System.out.println(e);
+       }
+       System.exit(0);
+     
+    }
+}
