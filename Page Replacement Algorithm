@@ -1,0 +1,163 @@
+#include <iostream>
+#include<vector>
+#include<algorithm>
+#include<map>
+#include<climits>
+using namespace std;
+class PageTable
+{
+    int pf;
+    vector<int>pt;
+    vector<int>input;
+    public:
+    PageTable()
+    {
+        int size,no;
+        cout<<"\nEnter no of input pages:";
+        cin>>size;
+        for(int i=0;i<size;i++)
+        {
+            cin>>no;
+            input.push_back(no);
+        }
+       cout<<"\nEnter no of pageFrames in pagetable:";
+       cin>>pf;
+       
+    }
+    bool isHit(int p)
+    {
+        if(find(pt.begin(),pt.end(),p)!=pt.end())
+        {
+            return true;
+        }
+        return false;
+    }
+    void fifo()
+    {
+        int faults=0;
+        for(int i=0;i<input.size();i++)
+        {
+            if(!isHit(input[i]))
+            {
+                
+                if(pt.size()==pf)
+                {
+                    cout<<"\nPage fault occur for "<<input[i]<<" page "<<input[i]<<" replces "<<pt[0] ;
+                    pt.erase(pt.begin());
+                    pt.push_back(input[i]);
+                }
+                else
+                {
+                    cout<<"\nPage fault occur for "<<input[i];
+                    pt.push_back(input[i]);
+                }
+                  faults++;
+            }
+            else
+            {
+                cout<<"\nHit";
+            }
+        }
+        cout<<"\nTotal no of page faults :"<<faults;
+    }
+    void LRU()
+    {
+          pt.clear();
+        int faults=0,ind;
+        map<int,int>mp;
+        for(int i=0;i<input.size();i++)
+        {
+            mp[input[i]]=INT_MIN;
+        }
+        for(int i=0;i<input.size();i++)
+        {
+            if(!isHit(input[i]))
+            {
+                faults++;
+                cout<<"\nPAge fault occurs for "<<input[i];
+                if(pt.size()==pf)
+                {
+                    for(int k=0;k<i;k++)
+                    {
+                        mp[input[k]]=k;
+                    }
+                    int min=INT_MAX;
+                    for(int j=0;j<pt.size();j++)
+                    {
+                        if(mp[pt[j]]<min)
+                        {
+                            min=mp[pt[j]];
+                            ind=pt[j];
+                        }
+                    }
+                    cout<<" "<<input[i]<<" replaces "<<ind;
+                 pt.erase(find(pt.begin(),pt.end(),ind));
+                 pt.push_back(input[i]);
+                }
+                else
+                {
+                    pt.push_back(input[i]);
+                }
+            }
+            else
+            {
+                cout<<"\nHIT!";
+            }
+        }
+         cout<<"\nTotal no of page faults :"<<faults;
+    }
+
+    void optimal()
+    {
+         pt.clear();
+        int faults=0,ind;
+        map<int,int>mp;
+        for(int i=0;i<input.size();i++)
+        {
+            mp[input[i]]=INT_MAX;
+        }
+        for(int i=0;i<input.size();i++)
+        {
+            if(!isHit(input[i]))
+            {
+                faults++;
+                cout<<"\nPAge fault occurs for "<<input[i];
+                if(pt.size()==pf)
+                {
+                    for(int k=i+1;k<input.size();k++)
+                    {
+                        mp[input[k]]=k;
+                    }
+                    int max=INT_MIN;
+                    for(int j=0;j<pt.size();j++)
+                    {
+                        if(mp[pt[j]]>max)
+                        {
+                            max=mp[pt[j]];
+                            ind=pt[j];
+                        }
+                    }
+                    cout<<" "<<input[i]<<" replaces "<<ind;
+                 pt.erase(find(pt.begin(),pt.end(),ind));
+                 pt.push_back(input[i]);
+                }
+                else
+                {
+                    pt.push_back(input[i]);
+                }
+            }
+            else
+            {
+                cout<<"\nHIT!";
+            }
+        }
+         cout<<"\nTotal no of page faults :"<<faults;
+    }
+};
+int main() 
+{
+  
+    PageTable p;
+    p.LRU();
+    return 0;
+}
