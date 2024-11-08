@@ -1,332 +1,289 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <tuple>
-#include <algorithm>
-
+#include<iostream>
+#include<vector>
+#include<sstream>
+#include<fstream>
+#include<tuple>
+#include<tuple>
 using namespace std;
-
-class MacroProcessor
+class Macro
 {
-private:
-    vector<tuple<string, int, int, int, int>> MNTAB; // Macro Name Table
-    vector<tuple<string, string>> KDTAB;             // Keyword Definition Table
-    vector<vector<string>> MDT;                      // Macro Definition Table
-    vector<vector<string>> PNTAB;                    // Parameter Name Table
-    vector<vector<string>> myToken;                  // Tokenized input lines
-
-    void displayToken();
-    void displayAll();
-    void displayAPTAB(string& macroName, vector<string>& APTAB);
-    int deal(string& token, int index);
-    int findInMNT(string& name);
-    string getValueFromKDTAB(string& key, int KDTP);
-    int getKeywordIndex(string& keyword, int macroIndex);
-    int getMacroLength(string& macName);
-    int storeDefinition(int lineNum);
-    void expandMacro(vector<string>& currSentence, ofstream& opFile);
-
+	vector<vector<string>>MyToken;
+	vector<vector<string>>MDT;
+	vector<pair<string, string>>KPDT;
+	vector<tuple<string, int, int, int, int>>MNT;
+	vector<vector<string>>PNTAB;
+	int count = 0;
+	ofstream fout;
 public:
-    MacroProcessor();
-    void pass1();
-    void pass2();
+	Macro()
+	{
+		string line, word;
+		fout.open("expanded_code.txt");
+		if (fout.fail())
+		{
+			cout << "\nError in opening file";
+			exit(1);
+		}
+		ifstream fin;
+		fin.open("input.txt");
+		if (fin.fail())
+		{
+			cout << "\nError in opening file";
+			exit(1);
+		}
+		while (getline(fin, line))
+		{
+			stringstream ss(line);
+			vector<string>token;
+			while (ss >> word)
+			{
+				token.push_back(word);
+			}
+			MyToken.push_back(token);
+		}
+	}
+	void displayToken()
+	{
+		for (int i = 0; i < MyToken.size(); i++)
+		{
+			for (int j = 0; j < MyToken[i].size(); j++)
+			{
+				cout << MyToken[i][j] << " ";
+			}
+			cout << endl;
+		}
+	}
+	int deal(string token, int size)
+	{
+		if (find(PNTAB[size].begin(), PNTAB[size].end(), token) != PNTAB[size].end())
+		{
+			return (find(PNTAB[size].begin(), PNTAB[size].end(), token) - PNTAB[size].begin()) + 1;
+		}
+		return -1;
+	}
+	int storeDef(int i)
+	{
+		int kp = 0, pp = 0;
+		int kpdtp = KPDT.size();
+		int mdtp = MDT.size();
+		string name = MyToken[i][0];
+		vector<string>temppntab;
+		for (int j = 1; j < MyToken[i].size(); j++)
+		{
+			string curr = MyToken[i][j];
+			if (curr.find("=") != string::npos)
+			{
+				int index = curr.find("=");
+				kp++;
+				string keyword = curr.substr(0, index);
+				string value = curr.substr(index + 1, curr.length() - index - 2);
+				KPDT.push_back({ keyword,value });
+				temppntab.push_back(keyword);
+			}
+			else
+			{
+				temppntab.push_back(curr.substr(0, curr.length() - 1));
+				pp++;
+			}
+		}
+
+		MNT.emplace_back(name, pp, kp, mdtp, kpdtp);
+		PNTAB.push_back(temppntab);
+		int j;
+		for (j = i + 1; j < MyToken.size() && MyToken[j][0] != "MEND"; j++)
+		{
+			vector<string>v1;
+			v1.push_back(MyToken[j][0]);
+			for (int k = 1; k < MyToken[j].size(); k++)
+			{
+				int index = deal(MyToken[j][k].substr(0, MyToken[j][k].length() - 1), PNTAB.size() - 1);
+				if (index == -1)
+				{
+					v1.push_back(MyToken[j][k]);
+				}
+				else
+				{
+					v1.push_back("(p," + to_string(index) + ")");
+				}
+			}
+			MDT.push_back(v1);
+		}
+		return j;
+	}
+	void displayMNT()
+	{
+		cout << "\nDisplaying MNT:";
+		for (tuple<string, int, int, int, int>t : MNT)
+		{
+			cout << "\n" << get<0>(t) << " " << get<1>(t) << " " << get<2>(t) << " " << get<3>(t) << " " << get<4>(t);
+		}
+	}
+	void displayMDT()
+	{
+		cout << "\nDisplaying MDT:\n";
+		for (vector<string>s : MDT)
+		{
+			for (int i = 0; i < s.size(); i++)
+			{
+				cout << s[i] << " ";
+			}
+			cout << endl;
+		}
+	}
+	void displayPNTAB()
+	{
+		cout << "\nDisplaying PNTAB:";
+		for (vector<string>s : PNTAB)
+		{
+			for (int i = 0; i < s.size(); i++)
+			{
+				cout << "\n" << s[i];
+			}
+		}
+	}
+	void displayKPDT()
+	{
+		cout << "\nDisplaying KPDT:";
+		for (pair<string, string>p : KPDT)
+		{
+			cout << "\n" << p.first << " " << p.second;
+		}
+	}
+	void Tokenize()
+	{
+		for (int i = 0; i < MyToken.size(); i++)
+		{
+			if (MyToken[i][0] == "MACRO")
+			{
+				i = storeDef(i + 1);
+			}
+			count = i;
+		}
+	}
+	int getMNTIndex(string name)
+	{
+		for (int i = 0; i < MNT.size(); i++)
+		{
+			if (get<0>(MNT[i]) == name)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+	void expandMacro(vector<string>token)
+	{
+		string macro_name = token[0];
+		int index = getMNTIndex(macro_name);
+		if (index == -1)
+		{
+			cout << "\nINvalid macro call";
+			return;
+		}
+		int pp = get<1>(MNT[index]);
+		int kp = get<2>(MNT[index]);
+		int MDTP = get<3>(MNT[index]);
+		int KPDTP= get<4>(MNT[index]);
+		vector<string>APTAB(pp + kp, "NULL");
+		int i;
+		for (i = 0; i < pp; i++)
+		{
+			APTAB[i] =token[i+1];
+		}
+		for (int j = i + 1; j < token.size(); j++)
+		{
+			if (token[j].find("=") != string::npos)
+			{
+				int ind = token[j].find("=");
+				string keyword = token[j].substr(0,ind);
+				string value =token[j].substr(ind+1);
+				int pntindex=getPNTABIndex(index,keyword);
+				if (pntindex == -1)
+				{
+					cout << "\n" << keyword << " is not prsent in PNTAB";
+					return;
+				}
+				APTAB[pntindex] = value;
+			}
+		}
+		for (int i = 0; i < APTAB.size(); i++)
+		{
+			if (APTAB[i] == "NULL")
+			{
+				string temp = PNTAB[index][i];
+				for (int j = KPDTP; j < KPDT.size(); j++)
+				{
+					if (KPDT[j].first == temp)
+					{
+						APTAB[i] = KPDT[j].second;
+					}
+				}
+			}
+		}
+		displayAPTAB(macro_name,APTAB);
+		//Expanding MDT
+		int limit;
+		if(index+1<MNT.size())
+		{
+			limit = get<3>(MNT[index + 1]);
+		}
+		else
+		{
+			limit = MDT.size();
+		}
+		for (int i = MDTP; i <limit; i++)
+		{
+			fout << endl;
+			for (int j = 0; j < MDT[i].size(); j++)
+			{
+				if (MDT[i][j].find("(") != string::npos)
+				{
+					int aptabind = stoi(MDT[i][j].substr(3, 1))-1;
+					fout << " "<<APTAB[aptabind];
+				}
+				else
+				{
+					fout << MDT[i][j] << " ";
+				}
+			}
+		}
+	}
+	int getPNTABIndex(int index,string key)
+	{
+		for (int i = 0; i < PNTAB[index].size(); i++)
+		{
+			if (PNTAB[index][i] == key)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+	void displayAPTAB(string macro,vector<string>APTAB)
+	{
+		cout << "\nDisplaying APTAB for :" << macro;
+		for (int i = 0; i < APTAB.size(); i++)
+		{
+			cout << "\n" << APTAB[i];
+		}
+	}
+	void pass2()
+	{
+		for (int i = count-1; i < MyToken.size(); i++)
+		{
+			expandMacro(MyToken[i]);
+		}
+	}
 };
-
-MacroProcessor::MacroProcessor()
-{
-    ifstream ipFile("macro_input_2.txt");
-    if (!ipFile) {
-        cerr << "Error opening file" << endl;
-        exit(1);
-    }
-
-    string buffer;
-    while (getline(ipFile, buffer))
-    {
-        stringstream ss(buffer);
-        vector<string> token;
-        string word;
-        while (ss >> word)
-        {
-            if (word != ",")
-                token.push_back(word);
-        }
-        myToken.push_back(token);
-    }
-    displayToken();
-}
-
-void MacroProcessor::displayToken()
-{
-    for (int i = 0; i < myToken.size(); i++)
-    {
-        cout << i << " :";
-        for (string word : myToken[i])
-        {
-            cout << word << "\t";
-        }
-        cout << endl;
-    }
-}
-
-void MacroProcessor::displayAll()
-{
-    cout << "\n---------MNT-----------\n";
-    cout << "Name\t#PP\t#KP\t#MDTP\t#KDTP\n";
-    for (tuple<string, int, int, int, int>entry : MNTAB)
-    {
-        cout << get<0>(entry) << "\t" << get<1>(entry) << "\t" << get<2>(entry) << "\t" << get<3>(entry) << "\t" << get<4>(entry) << "\n";
-    }
-    cout << "-------------------------\n";
-
-    cout << "\n---------MDT-----------\n";
-    for (size_t i = 0; i < MDT.size(); i++)
-    {
-        cout << "Line " << i + 1 << ": ";
-        for (auto& word : MDT[i])
-        {
-            cout << word << " ";
-        }
-        cout << endl;
-    }
-    cout << "-------------------------\n";
-
-    cout << "\n--------KDTAB----------\n";
-    cout << "Keyword\tValue\n";
-    for (tuple<string, string> entry : KDTAB)
-    {
-        cout << get<0>(entry) << "\t" << get<1>(entry) << endl;
-    }
-    cout << "-------------------------\n";
-    cout << "\n--------PNTAB----------\n";
-    for (vector<string>line : PNTAB)
-    {
-        for (string para : line)
-        {
-            cout << para << "\t";
-        }
-        cout << endl;
-    }
-    cout << "-----------------------\n";
-}
-
-void MacroProcessor::displayAPTAB(string& macroName, vector<string>& APTAB)
-{
-    cout << "\n--------APTAB[" << macroName << "]------------\n";
-    for (size_t k = 0; k < APTAB.size(); k++)
-    {
-        cout << k << " :" << APTAB[k] << endl;
-    }
-    cout << "\n-------------------------------------------\n";
-}
-
-int MacroProcessor::deal(string& token, int index)
-{
-    if (index < 0 || index >= PNTAB.size()) return -1;
-
-    vector<string>parameters = PNTAB[index];
-    auto it = find(parameters.begin(), parameters.end(), token);
-    if (it != parameters.end())
-        return distance(parameters.begin(), it) + 1;
-    return -1;
-}
-
-int MacroProcessor::findInMNT(string& name)
-{
-    for (size_t i = 0; i < MNTAB.size(); i++)
-    {
-        if (get<0>(MNTAB[i]) == name)
-            return static_cast<int>(i);
-    }
-    return -1;
-}
-
-string MacroProcessor::getValueFromKDTAB(string& key, int KDTP)
-{
-    if (KDTP < 0 || KDTP >= static_cast<int>(KDTAB.size())) return "Not defined"; // Prevent out-of-bounds access
-
-    for (int i = KDTP; i < static_cast<int>(KDTAB.size()); i++)
-    {
-        if (get<0>(KDTAB[i]) == key)
-            return get<1>(KDTAB[i]);
-    }
-    return "Not defined";
-}
-
-int MacroProcessor::getKeywordIndex(string& keyword, int macroIndex)
-{
-    if (macroIndex < 0 || macroIndex >= static_cast<int>(PNTAB.size())) return -1; // Prevent out-of-bounds access
-
-    auto& currParameters = PNTAB[macroIndex];
-    auto it = find(currParameters.begin(), currParameters.end(), keyword);
-    if (it != currParameters.end())
-        return distance(currParameters.begin(), it);
-    return -1;
-}
-
-int MacroProcessor::getMacroLength(string& macName)
-{
-    int index = findInMNT(macName);
-    if (index == -1) return 0;
-
-    int MDTP = get<3>(MNTAB[index]);
-    for (int k = MDTP; k < static_cast<int>(MDT.size()); k++)
-    {
-        if (MDT[k][0] == "MEND")
-        {
-            return k + 1 - MDTP;
-            return k + 1 - MDTP;
-        }
-    }
-    return 0;
-}
-
-int MacroProcessor::storeDefinition(int lineNum)
-{
-    if (lineNum < 0 || lineNum >= myToken.size())return lineNum; // Prevent out-of-bounds access
-
-    string name;
-    vector<string> tempPNTAB;
-    int PP = 0, KP = 0, KDTP, MDTP, j;
-    KDTP = KDTAB.size();
-    MDTP = MDT.size();
-    name = myToken[lineNum][0];
-
-    for (int i = 1; i < myToken[lineNum].size(); i++)
-    {
-        string currToken = myToken[lineNum][i];
-        if (currToken.find('=') != string::npos)
-        {
-            KP++;
-            int index = currToken.find('=');
-            string value = currToken.substr(index + 1);
-            string keyword = currToken.substr(0, index);
-            KDTAB.emplace_back(keyword, value);
-            tempPNTAB.push_back(keyword);
-        }
-        else
-        {
-            tempPNTAB.push_back(currToken);
-        }
-    }
-    PP = tempPNTAB.size() - KP;
-    PNTAB.push_back(tempPNTAB);
-
-    for (j = lineNum + 1; j < myToken.size() && myToken[j][0] != "MEND"; j++)
-    {
-        vector<string> V1;
-        for (string token : myToken[j])
-        {
-            int index = deal(token, PNTAB.size() - 1);
-            if (index != -1)
-            {
-                V1.push_back(" (P," + to_string(index) + ")");
-            }
-            else
-            {
-                V1.push_back(token);
-            }
-        }
-        MDT.push_back(V1);
-    }
-    MDT.push_back({ "MEND" });
-    MNTAB.emplace_back(name, PP, KP, MDTP, KDTP);
-    return j;
-}
-
-void MacroProcessor::expandMacro(vector<string>& currSentence, ofstream& opFile)
-{
-    int index = findInMNT(currSentence[0]);
-    if (index == -1) return;
-
-    int numPP = get<1>(MNTAB[index]);
-    int numKP = get<2>(MNTAB[index]);
-    int MDTP = get<3>(MNTAB[index]);
-    int KDTP = get<4>(MNTAB[index]);
-
-    vector<string> APTAB(numKP + numPP, "NULL");
-    int i;
-    for (i = 1; i <= numPP; i++)
-    {
-        APTAB[i - 1] = currSentence[i];
-    }
-
-    for (; i < static_cast<int>(currSentence.size()); i++)
-    {
-        auto loc = currSentence[i].find('=');
-        if (loc != string::npos)
-        {
-            string value = currSentence[i].substr(loc + 1);
-            string keyword = currSentence[i].substr(0, loc);
-            APTAB[getKeywordIndex(keyword, index)] = value;
-        }
-    }
-
-    for (int i = 0; i < static_cast<int>(APTAB.size()); i++)
-    {
-        if (APTAB[i] == "NULL")
-        {
-            string key = PNTAB[index][i];
-            APTAB[i] = getValueFromKDTAB(key, KDTP);
-        }
-    }
-    displayAPTAB(get<0>(MNTAB[index]), APTAB);
-
-    for (int i = MDTP; i < static_cast<int>(MDT.size()) && MDT[i][0] != "MEND"; i++)
-    {
-        for (auto& instruct : MDT[i])
-        {
-            if (instruct.find('(') != string::npos)
-            {
-                int temp = stoi(instruct.substr(4, 1));
-                opFile << APTAB[temp - 1] << " ";
-            }
-            else
-            {
-                opFile << instruct << " ";
-            }
-        }
-        opFile << endl;
-    }
-}
-
-void MacroProcessor::pass1()
-{
-    for (int i = 0; i < myToken.size(); i++)
-    {
-        vector<string>curr = myToken[i];
-        if (find(curr.begin(), curr.end(), "MACRO") != curr.end())
-        {
-            i = storeDefinition(i + 1);
-        }
-    }
-}
-
-void MacroProcessor::pass2()
-{
-    ofstream opFile("expanded_Code.txt");
-    if (!opFile)
-    {
-        cerr << "Error opening output file" << endl;
-        exit(1);
-    }
-    pass1();
-    displayAll();
-    for (vector<string>tokens : myToken)
-    {
-        if (find(tokens.begin(), tokens.end(), "MACRO") == tokens.end())
-        {
-            expandMacro(tokens, opFile);
-        }
-    }
-    opFile.close();
-}
-
 int main()
 {
-    MacroProcessor mp;
-    mp.pass2();
-    return 0;
+	Macro m1;
+	m1.displayToken();
+	m1.Tokenize();
+	m1.displayMNT();
+	m1.displayPNTAB();
+	m1.displayKPDT();
+	m1.displayMDT();
+	m1.pass2();
+	return 0;
 }
-
