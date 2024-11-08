@@ -1,0 +1,11 @@
+
+Expanding macro M1
+MOVER  AREG AREG,
+ADD  AREG='1' 
+MOVER  CREG BREG,
+ADD  AREG='5' 
+Expanding macro M2
+MOVER  CREG AREG,
+MOVER  DREG BREG
+ADD  CREG='15' 
+ADD  DREG='10' 
