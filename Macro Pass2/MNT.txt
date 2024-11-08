@@ -1,8 +1,2 @@
-MOVER (p,3) (p,1)
-ADD (p,3) ='1'
-MOVER (p,4) (p,2)
-ADD (p,3) ='5'
-MOVER (p,3) (p,1)
-MOVER (p,4) (p,2)
-ADD (p,3) ='15'
-ADD (p,4) ='10'
+M1 2 2 0 0
+M2 2 2 4 2
