@@ -18,6 +18,3 @@
 118 (DL, 02) (C, 1) 
 119 (DL, 01) (C, 2) 
     (AD, 02) 
-
-output.txt
-Displaying output.txt.
