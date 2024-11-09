@@ -87,6 +87,7 @@ public:
 				while (litindex < LitTab.size())
 				{
 					LitTab[litindex].second = LC;
+					fout<<"\n"<<LC<<" "<<" (DL,01) (C,<<LitTab[litindex]<<")";
 					litindex++;
 					LC++;
 				}
@@ -193,6 +194,7 @@ public:
 				while(litindex< LitTab.size())
 				{
 					LitTab[litindex].second = LC;
+					fout<<"\n"<<LC<<" "<<" (DL,01) (C,<<LitTab[litindex]<<")";
 					LC++;
 					litindex++;
 				}
